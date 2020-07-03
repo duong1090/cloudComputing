@@ -21,10 +21,34 @@ import {
   Dimensions,
 } from 'react-native';
 import LottieView from 'lottie-react-native';
+import {getCurrentTemp, getNextTemp, getNextByInput} from './API';
 
 const widthScreen = Dimensions.get('window').width;
 
 class MainScreen extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      currentTemp: '',
+      nextTemp: '',
+      loading: false,
+    };
+  }
+
+  componentDidMount = () => {
+    getCurrentTemp().then((res) => {
+      this.setState({
+        currentTemp: +parseFloat(res.currentTemp).toFixed(2),
+      });
+    });
+
+    getNextTemp().then((res) => {
+      this.setState({
+        nextTemp: +parseFloat(res.nextTemp).toFixed(2),
+      });
+    });
+  };
+
   renderStatus = (text) => {
     return (
       <View style={styles.status}>
@@ -56,8 +80,33 @@ class MainScreen extends Component {
     <LottieView style={style} source={source} autoPlay={true} loop />
   );
 
+  getInformation = async () => {
+    await this.setState({
+      loading: true,
+    });
+
+    await getCurrentTemp().then((res) => {
+      this.setState({
+        currentTemp: +parseFloat(res.currentTemp).toFixed(2),
+      });
+    });
+
+    await getNextTemp().then((res) => {
+      this.setState({
+        nextTemp: +parseFloat(res.nextTemp).toFixed(2),
+      });
+    });
+
+    if (this.state.currentTemp && this.state.nextTemp) {
+      this.setState({
+        loading: false,
+      });
+    }
+  };
+
   render() {
-    console.log('width of screen', widthScreen);
+    const {currentTemp, nextTemp, loading} = this.state;
+
     return (
       <View style={styles.background}>
         {this.renderLottie(require('../lottie/sun.json'), styles.sun)}
@@ -65,25 +114,29 @@ class MainScreen extends Component {
 
         <View>
           <View>
-            {this.renderTemperature('37')}
+            {this.renderTemperature(currentTemp)}
             {this.renderStatus('NOW')}
           </View>
           <View>
-            {this.renderTemperature('42')}
+            {this.renderTemperature(nextTemp)}
             {this.renderStatus('NEXT')}
           </View>
 
-          <View>
-            <TouchableOpacity style={styles.buttonGet}>
+          <View style={{width: 200, alignSelf: 'center'}}>
+            <TouchableOpacity
+              onPress={() => this.getInformation()}
+              style={styles.buttonGet}>
               <Image
                 style={styles.iconGet}
                 source={require('../../assets/icons/tap.png')}
               />
             </TouchableOpacity>
-            {this.renderLottie(
-              require('../lottie/loading.json'),
-              styles.loading,
-            )}
+            {loading
+              ? this.renderLottie(
+                  require('../lottie/loading.json'),
+                  styles.loading,
+                )
+              : null}
           </View>
         </View>
       </View>
@@ -186,6 +239,6 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     top: 10,
-    right: -15,
+    right: -20,
   },
 });
