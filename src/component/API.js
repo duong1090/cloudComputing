@@ -8,7 +8,8 @@ export const getNextTemp = () =>
     res.json(),
   );
 
-export const getNextByInput = () =>
-  fetch(
-    'http://dtdmnhom5.us-east-2.elasticbeanstalk.com/iot/35.5',
+export const getNextByInput = (value) => {
+  return fetch(
+    'http://dtdmnhom5.us-east-2.elasticbeanstalk.com/iot/' + value,
   ).then((res) => res.json());
+};

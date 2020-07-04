@@ -9,29 +9,33 @@
 
 import React, {Component} from 'react';
 import {
-  SafeAreaView,
   StyleSheet,
-  ScrollView,
   View,
   Text,
-  Animated,
   Image,
-  Easing,
   TouchableOpacity,
-  Dimensions,
+  ToastAndroid,
+  Animated,
+  Platform,
+  TextInput,
 } from 'react-native';
 import LottieView from 'lottie-react-native';
 import {getCurrentTemp, getNextTemp, getNextByInput} from './API';
+import Interactable from 'react-native-interactable';
+import variables from './variables/commonColor';
 
-const widthScreen = Dimensions.get('window').width;
+const DELTA_HEIGHT = variables.isIphoneX ? variables.scale(80) : 0;
+const RATIO = 1.5;
 
 class MainScreen extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      currentTemp: '',
-      nextTemp: '',
+      currentTemp: '0',
+      nextTemp: '0',
       loading: false,
+      inputValue: '',
+      keyboardOffset: new Animated.Value(0),
     };
   }
 
@@ -56,7 +60,7 @@ class MainScreen extends Component {
           style={{
             color: '#fff',
             textAlign: 'center',
-            fontSize: 20,
+            fontSize: variables.scale(20 * RATIO),
             fontFamily: 'Ubuntu-Bold',
           }}>
           {text}
@@ -85,17 +89,36 @@ class MainScreen extends Component {
       loading: true,
     });
 
-    await getCurrentTemp().then((res) => {
-      this.setState({
-        currentTemp: +parseFloat(res.currentTemp).toFixed(2),
+    if (this.state.inputValue === '') {
+      await getCurrentTemp().then((res) => {
+        this.setState({
+          currentTemp: +parseFloat(res.currentTemp).toFixed(2),
+        });
       });
-    });
 
-    await getNextTemp().then((res) => {
-      this.setState({
-        nextTemp: +parseFloat(res.nextTemp).toFixed(2),
+      await getNextTemp().then((res) => {
+        this.setState({
+          nextTemp: +parseFloat(res.nextTemp).toFixed(2),
+        });
       });
-    });
+    } else {
+      await getNextByInput(this.state.inputValue)
+        .then((res) => {
+          this.setState({
+            currentTemp: +parseFloat(this.state.inputValue).toFixed(2),
+            nextTemp: +parseFloat(res.nextTemp).toFixed(2),
+          });
+        })
+        .catch(() => {
+          ToastAndroid.show(
+            'We have no result with this temperature',
+            ToastAndroid.SHORT,
+          );
+          this.setState({
+            loading: false,
+          });
+        });
+    }
 
     if (this.state.currentTemp && this.state.nextTemp) {
       this.setState({
@@ -104,8 +127,14 @@ class MainScreen extends Component {
     }
   };
 
+  changeText = (text) => {
+    this.setState({
+      inputValue: text,
+    });
+  };
+
   render() {
-    const {currentTemp, nextTemp, loading} = this.state;
+    const {currentTemp, nextTemp, loading, keyboardOffset} = this.state;
 
     return (
       <View style={styles.background}>
@@ -122,7 +151,8 @@ class MainScreen extends Component {
             {this.renderStatus('NEXT')}
           </View>
 
-          <View style={{width: 200, alignSelf: 'center'}}>
+          <View
+            style={{width: variables.scale(300 * RATIO), alignSelf: 'center'}}>
             <TouchableOpacity
               onPress={() => this.getInformation()}
               style={styles.buttonGet}>
@@ -138,6 +168,27 @@ class MainScreen extends Component {
                 )
               : null}
           </View>
+          <Animated.View
+            style={[
+              styles.input,
+              {
+                bottom: Platform.select({
+                  ios: keyboardOffset,
+                  android: 0,
+                }),
+              },
+            ]}>
+            <TextInput
+              style={{
+                textAlign: 'center',
+                fontFamily: 'Ubuntu-Bold',
+                fontSize: variables.scale(50),
+                color: '#fff',
+              }}
+              onChangeText={(text) => this.changeText(text)}
+              value={this.state.inputValue}
+            />
+          </Animated.View>
         </View>
       </View>
     );
@@ -147,48 +198,55 @@ class MainScreen extends Component {
 export default MainScreen;
 
 const styles = StyleSheet.create({
+  input: {
+    width: variables.scale(300),
+    alignSelf: 'center',
+    borderBottomLeftRadius: variables.scale(50),
+    borderBottomRightRadius: variables.scale(50),
+    backgroundColor: 'red',
+  },
   iconGet: {
-    width: 40,
-    height: 40,
+    width: variables.scale(40 * RATIO),
+    height: variables.scale(40 * RATIO),
   },
   buttonGet: {
-    marginTop: 20,
-    width: 150,
-    height: 70,
+    marginTop: variables.scale(20 * RATIO),
+    width: variables.scale(250 * RATIO),
+    height: variables.scale(90 * RATIO),
     backgroundColor: '#F3C71E',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 30,
+    borderRadius: variables.scale(30 * RATIO),
     alignSelf: 'center',
   },
 
   status: {
     position: 'absolute',
     backgroundColor: 'red',
-    borderRadius: 20,
+    borderRadius: variables.scale(20 * RATIO),
     justifyContent: 'center',
-    width: 90,
-    height: 30,
-    top: -10,
-    right: -10,
+    width: variables.scale(90 * RATIO),
+    height: variables.scale(30 * RATIO),
+    top: variables.scale(-10 * RATIO),
+    right: variables.scale(-10 * RATIO),
   },
 
   icon: {
-    width: 50,
-    height: 50,
+    width: variables.scale(50 * RATIO),
+    height: variables.scale(50 * RATIO),
   },
 
   fontNumber: {
     alignSelf: 'flex-end',
     fontFamily: 'Ubuntu-Bold',
-    fontSize: 100,
+    fontSize: variables.scale(100 * RATIO),
     color: '#F3C71E',
-    marginHorizontal: 10,
+    marginHorizontal: variables.scale(10 * RATIO),
   },
 
   fontCelsius: {
     fontFamily: 'Ubuntu-Bold',
-    fontSize: 30,
+    fontSize: variables.scale(30 * RATIO),
     color: '#ffc0cb',
   },
   background: {
@@ -199,46 +257,46 @@ const styles = StyleSheet.create({
   },
 
   temperatureNow: {
-    borderWidth: 1,
+    borderWidth: variables.scale(1 * RATIO),
     borderColor: '#F3C71E',
-    borderRadius: 40,
+    borderRadius: variables.scale(40 * RATIO),
     borderTopRightRadius: 0,
-    padding: 10,
+    padding: variables.scale(10 * RATIO),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: variables.scale(30 * RATIO),
   },
 
   cloud: {
     position: 'absolute',
-    width: 200,
-    height: 200,
-    bottom: 70,
-    right: -20,
+    width: variables.scale(200 * RATIO),
+    height: variables.scale(200 * RATIO),
+    bottom: variables.scale(70 * RATIO),
+    right: variables.scale(-20 * RATIO),
   },
 
   snow: {
     position: 'absolute',
-    width: 200,
-    height: 200,
-    top: 10,
-    left: -20,
+    width: variables.scale(200 * RATIO),
+    height: variables.scale(200 * RATIO),
+    top: variables.scale(10 * RATIO),
+    left: variables.scale(-20 * RATIO),
   },
 
   sun: {
     position: 'absolute',
-    width: 400,
-    height: 400,
-    top: -80,
-    right: -80,
+    width: variables.scale(400 * RATIO),
+    height: variables.scale(400 * RATIO),
+    top: variables.scale(-80 * RATIO),
+    right: variables.scale(-80 * RATIO),
   },
 
   loading: {
     position: 'absolute',
-    width: 70,
-    height: 70,
-    top: 10,
-    right: -20,
+    width: variables.scale(70 * RATIO),
+    height: variables.scale(70 * RATIO),
+    top: variables.scale(10 * RATIO),
+    right: variables.scale(-20 * RATIO),
   },
 });
