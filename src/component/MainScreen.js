@@ -23,6 +23,7 @@ import LottieView from 'lottie-react-native';
 import {getCurrentTemp, getNextTemp, getNextByInput} from './API';
 import Interactable from 'react-native-interactable';
 import variables from './variables/commonColor';
+import moment from 'moment';
 
 const DELTA_HEIGHT = variables.isIphoneX ? variables.scale(80) : 0;
 const RATIO = 1.5;
@@ -34,6 +35,7 @@ class MainScreen extends Component {
       currentTemp: '0',
       nextTemp: '0',
       loading: false,
+      updatedAt: moment().format('MMMM Do YYYY, h:mm:ss a'),
       inputValue: '',
       keyboardOffset: new Animated.Value(0),
     };
@@ -123,6 +125,7 @@ class MainScreen extends Component {
     if (this.state.currentTemp && this.state.nextTemp) {
       this.setState({
         loading: false,
+        updatedAt: moment().format('MMMM Do YYYY, h:mm:ss a'),
       });
     }
   };
@@ -134,12 +137,27 @@ class MainScreen extends Component {
   };
 
   render() {
-    const {currentTemp, nextTemp, loading, keyboardOffset} = this.state;
+    const {
+      currentTemp,
+      nextTemp,
+      loading,
+      keyboardOffset,
+      updatedAt,
+    } = this.state;
 
     return (
       <View style={styles.background}>
         {this.renderLottie(require('../lottie/sun.json'), styles.sun)}
         {this.renderLottie(require('../lottie/snownight.json'), styles.snow)}
+        <Text
+          style={{
+            fontFamily: 'Ubuntu-Bold',
+            fontSize: variables.scale(30),
+            color: 'grey',
+            marginBottom: variables.scale(30 * RATIO),
+          }}>
+          Updated at: {updatedAt}
+        </Text>
 
         <View>
           <View>
@@ -210,7 +228,6 @@ const styles = StyleSheet.create({
     height: variables.scale(40 * RATIO),
   },
   buttonGet: {
-    marginTop: variables.scale(20 * RATIO),
     width: variables.scale(250 * RATIO),
     height: variables.scale(90 * RATIO),
     backgroundColor: '#F3C71E',
